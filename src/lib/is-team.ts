@@ -1,7 +1,7 @@
 export const IS_TEAM_EMAILS = [
-  "is@resourcery.com.ng",
-  "john.doe@resourcery.com.ng",
-  "jane.smith@resourcery.com.ng"
+  "is@resourcery.com",
+  "ezekiel@resourcery.com",
+  "malikm@resourcery.com"
   // ← Add all real IS team emails here
 ].map(e => e.toLowerCase())
 
