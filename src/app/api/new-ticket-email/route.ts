@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
   const { ticket } = await req.json();
 
   await resend.emails.send({
-    from: 'Resourcery IT <no-reply@resend.dev>',
-    to: IT_EMAILS,
+    from: 'Resourcery IS <no-reply@resend.dev>',
+    to: IS_EMAILS,
     subject: `NEW TICKET – ${ticket.priority} – ${ticket.title}`,
     html: `
       <h2>New Ticket</h2>
