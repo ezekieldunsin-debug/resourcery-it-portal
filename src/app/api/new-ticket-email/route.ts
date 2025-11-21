@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const IT_EMAILS = ["is@resourcery.com", "ezekiel@resourcery.com"]; // ← CHANGE THESE
+const IT_EMAILS = ["is@resourcery.com", "ezekiela@resourcery.com"]; // ← CHANGE THESE
 
 export async function POST(req: NextRequest) {
   const { ticket } = await req.json();
