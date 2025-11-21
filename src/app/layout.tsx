@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Resourcery IT Portal',
-  description: 'Fast IT support for everyone',
+  title: 'Resourcery IS Portal',
+  description: 'Fast IS support for everyone',
   manifest: '/manifest.json',
 };
 
