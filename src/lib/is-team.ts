@@ -3,7 +3,6 @@ export const IS_TEAM_EMAILS = [
   "ezekiel@resourcery.com",
   "malikm@resourcery.com"
   // ← Add all real IS team emails here
-].map(e => e.toLowerCase())
+].map(email => email.toLowerCase())
 
-export const isISUser = (email: string) => 
-  IS_TEAM_EMAILS.includes(email.toLowerCase())
+export const isISUser = (email: string) => IS_TEAM_EMAILS.includes(email.toLowerCase())
