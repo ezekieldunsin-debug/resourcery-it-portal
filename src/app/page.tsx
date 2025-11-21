@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import { isISUser } from '@/lib/is-team'
-import { LogIn, Send } from 'lucide-react'
+import { LogIn, Send, Paperclip } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'  // Fixed import
+import { isISUser } from '@/lib/is-team'  // Fixed import
 
 export default function Home() {
   const [user, setUser] = useState<any>(null)
@@ -14,7 +14,7 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
   }, [])
 
   const signIn = () => supabase.auth.signInWithOAuth({
@@ -22,34 +22,39 @@ export default function Home() {
     options: { scopes: 'email profile' }
   })
 
-  const sign = [
-    { title: "New Laptop", cat: "Hardware", desc: "Request new laptop" },
-    { title: "Software Install", cat: "Software", desc: "Need software installed" },
-    { title: "Account Unlock", cat: "Account", desc: "Account locked" },
-    { title: "Printer Issue", cat: "Printer", desc: "Printer not working" },
-    { title: "VPN Problem", cat: "Network", desc: "Can't connect to VPN" },
-    { title: "Access Request", cat: "Permissions", desc: "Need folder access" }
-  ]
+  const signOut = () => supabase.auth.signOut()
+
+  const quickRequest = (t: string, c: string, d: string) => {
+    setTitle(t)
+    setCategory(c)
+    setDescription(d)
+  }
 
   const submitTicket = async () => {
-    if (!user) return alert("Please log in")
+    if (!user) return alert('Please log in first.')
 
     let attachment_url = null
     if (file) {
       const { data } = await supabase.storage
         .from('attachments')
-        .upload(`tickets/${Date.now()}-${file.name}`, file)
+        .upload(`${user.id}/${Date.now()}-${file.name}`, file)
       if (data) {
-        attachment_url = supabase.storage.from('attachments').getPublicUrl(data.path).data.publicUrl
+        const { data: { publicUrl } } = supabase.storage
+          .from('attachments')
+          .getPublicUrl(data.path)
+        attachment_url = publicUrl
       }
     }
 
     const { data: newTicket } = await supabase
       .from('tickets')
       .insert({
-        user_email: user.user_metadata.email,
-        user_name: user.user_metadata.full_name,
-        title, description, category, priority,
+        user_email: user.user_metadata?.email || user.email,
+        user_name: user.user_metadata?.full_name || user.email,
+        title,
+        description,
+        category,
+        priority,
         attachment_url,
         status: 'New'
       })
@@ -59,30 +64,48 @@ export default function Home() {
     if (newTicket) {
       await fetch('/api/new-ticket-email', {
         method: 'POST',
-        body: JSON.stringify({ ticket: newTicket }),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: newTicket })
       })
     }
 
-    alert("Ticket submitted! IS team will contact you.")
-    setTitle(''); setDescription(''); setCategory(''); setFile(null)
+    alert('Ticket submitted! IS team will contact you soon.')
+    setTitle(''); setDescription(''); setCategory(''); setPriority('Medium'); setFile(null)
   }
 
-  if (!user) return (
-    <div className="min-h-screen bg-gradient-to-br from-navy to-purple-900 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 text-center">
-        <img src="https://resourcery.com/wp-content/uploads/2023/06/Resourcery-Logo-1.png" alt="Resourcery" className="h-16 mx-auto mb-6" />
-        <h1 className="text-4xl font-bold mb-4">Resourcery IS Portal</h1>
-        <button onClick={signIn} className="bg-teal text-white px-8 py-4 rounded-xl flex items-center gap-3 mx-auto text-lg font-bold">
-          <LogIn /> Login with Office 365
-        </button>
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-navy to-purple-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-10 text-center max-w-md w-full">
+          <img src="https://resourcery.com/wp-content/uploads/2023/06/Resourcery-Logo-1.png" alt="Resourcery" className="h-16 mx-auto mb-6" />
+          <h1 className="text-4xl font-bold text-navy mb-4">Resourcery IS Portal</h1>
+          <p className="text-gray-600 mb-8">One-click support from Information Systems</p>
+          <button
+            onClick={signIn}
+            className="bg-teal hover:bg-teal/90 text-white px-8 py-4 rounded-xl flex items-center gap-3 mx-auto text-lg font-bold transition-colors"
+          >
+            <LogIn size={24} /> Login with Office 365
+          </button>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  const quickButtons = [
+    { title: 'New Laptop', icon: '💻', cat: 'Hardware', desc: 'Request new laptop or accessories' },
+    { title: 'Software Install', icon: '📦', cat: 'Software', desc: 'Install new software' },
+    { title: 'Account Unlock', icon: '🔓', cat: 'Account', desc: 'Unlock account or reset password' },
+    { title: 'Guest Wi-Fi', icon: '📶', cat: 'Network', desc: 'Guest Wi-Fi access' },
+    { title: 'Printer Issue', icon: '🖨️', cat: 'Printer', desc: 'Printer not working' },
+    { title: 'Teams/Zoom', icon: '🎥', cat: 'Collaboration', desc: 'Teams or Zoom problem' },
+    { title: 'VPN Problem', icon: '🌐', cat: 'Network', desc: 'VPN connection issue' },
+    { title: 'New Employee', icon: '👤', cat: 'Onboarding', desc: 'Onboard new staff' },
+    { title: 'Access Request', icon: '🔑', cat: 'Permissions', desc: 'Request folder/software access' },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-navy text-white p-6">
+      <header className="bg-navy text-white p-6 shadow-xl">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <img src="https://resourcery.com/wp-content/uploads/2023/06/Resourcery-Logo-1.png" alt="Resourcery" className="h-12" />
@@ -92,12 +115,12 @@ export default function Home() {
             </div>
           </div>
           <div className="flex gap-4 items-center">
-            {isISUser(user.user_metadata.email) && (
-              <a href="/is/dashboard" className="bg-teal px-6 py-3 rounded-lg font-bold">
+            {isISUser(user.user_metadata?.email || user.email) && (
+              <a href="/is/dashboard" className="bg-teal hover:bg-teal/90 px-6 py-3 rounded-lg font-bold transition-colors">
                 IS Dashboard →
               </a>
             )}
-            <button onClick={() => supabase.auth.signOut()} className="bg-white/10 px-4 py-2 rounded">
+            <button onClick={signOut} className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors">
               Logout
             </button>
           </div>
@@ -105,28 +128,67 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {quickButtons.map((b, i) => (
-            <button key={i} onClick={() => { setTitle(b.title); setCategory(b.cat); setDescription(b.desc) }}
-              className="bg-white border-2 hover:border-teal rounded-xl p-6 text-center font-semibold">
-              {b.title}
+        <h2 className="text-2xl font-bold mb-6 text-navy">Quick Requests (One Tap)</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
+          {quickButtons.map((btn, i) => (
+            <button
+              key={i}
+              onClick={() => quickRequest(btn.title, btn.cat, btn.desc)}
+              className="bg-white border-2 border-gray-200 hover:border-teal hover:shadow-lg rounded-xl p-6 text-center transition-all"
+            >
+              <div className="text-4xl mb-2">{btn.icon}</div>
+              <div className="font-semibold text-gray-800">{btn.title}</div>
             </button>
           ))}
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold mb-6">Create Custom Ticket</h2>
-          <div className="space-y-4">
-            <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} className="w-full border rounded-lg px-4 py-3" />
-            <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full border rounded-lg px-4 py-3">
-              <option>Low</option><option>Medium</option><option>High</option><option>Urgent</option>
+          <h2 className="text-2xl font-bold mb-6 text-navy">Create Custom Ticket</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <input
+              placeholder="Title *"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              className="border rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal"
+            />
+            <select
+              value={priority}
+              onChange={e => setPriority(e.target.value)}
+              className="border rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal"
+            >
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+              <option>Urgent</option>
             </select>
-            <input placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} className="w-full border rounded-lg px-4 py-3" />
-            <textarea placeholder="Describe the issue..." value={description} onChange={e => setDescription(e.target.value)} rows={5} className="w-full border rounded-lg px-4 py-3" />
-            <input type="file" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full" />
-            <button onClick={submitTicket} className="bg-teal text-white px-8 py-4 rounded-xl flex items-center gap-3 font-bold">
-              <Send size={24} /> Submit Ticket
-            </button>
+            <input
+              placeholder="Category (e.g., Hardware)"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              className="border rounded-lg px-4 py-3 md:col-span-2 focus:ring-2 focus:ring-teal"
+            />
+            <textarea
+              placeholder="Describe your issue in detail..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={5}
+              className="border rounded-lg px-4 py-3 md:col-span-2 focus:ring-2 focus:ring-teal"
+            />
+            <div className="md:col-span-2">
+              <label className="block mb-2 text-sm font-medium">Attachment (optional)</label>
+              <input
+                type="file"
+                onChange={e => setFile(e.target.files?.[0] || null)}
+                className="w-full border rounded-lg px-4 py-3"
+              />
+              <button
+                onClick={submitTicket}
+                className="mt-4 bg-teal hover:bg-teal/90 text-white px-8 py-4 rounded-xl flex items-center gap-3 text-lg font-bold transition-colors w-full md:w-auto justify-center"
+              >
+                <Send size={24} /> Submit Ticket
+                {file && <Paperclip size={20} />}
+              </button>
+            </div>
           </div>
         </div>
       </div>
